@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../apis/authentication.dart';
+
+
 
 class LoginPage extends StatelessWidget{
   const LoginPage({super.key});
@@ -65,9 +68,6 @@ class PasswordTextField extends StatefulWidget{
   final TextEditingController _passwordController;
   bool _loginFailed = false;
   PasswordTextField(this._passwordController, {super.key});
-  
-
-
   @override
   State<PasswordTextField> createState() => _PasswordTextFieldState();
 }
@@ -87,9 +87,7 @@ class _PasswordTextFieldState extends State<PasswordTextField> {
       widget._loginFailed = value;
     });
   }
-
   
-
   @override
   Widget build(BuildContext context) {
 
@@ -125,10 +123,11 @@ class LoginButton extends StatelessWidget{
   Widget build(BuildContext context) {
     return ElevatedButton(  
       onPressed: (() async {
+
         if(await login.login(emailController.text, pwField._passwordController.text)){
-          Navigator.of(context).pushReplacementNamed('/mainPage');
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          Navigator.of(context).pushReplacementNamed('/mainPage', arguments: prefs.getInt('institutionId'));
         } else{
-          //TO DO: error handling
         }
       }
      ), 
@@ -137,3 +136,21 @@ class LoginButton extends StatelessWidget{
   }
 
 }
+
+// class LocalAuth{
+//   static final _auth = LocalAuthentication();
+//   static Future<bool> _canAuthenticate() async => await _auth.canCheckBiometrics || await _auth.isDeviceSupported();
+
+//   static Future<bool> authenticate() async {
+//     try{
+//       if(!await _canAuthenticate()) return false;
+
+//       return await _auth.authenticate(
+//         localizedReason: "Prihlásenie"
+
+//       );
+//     } catch(e){
+//       return false;
+//     }
+//   }
+// }

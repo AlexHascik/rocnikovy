@@ -49,7 +49,7 @@ class _MainScreenState extends State<MainScreen> {
             :const Center(child: CircularProgressIndicator()),
           QRScanPage(currentIndexNotifier: currentIndexNotifier),
           teamId != null
-            ? QRDisplayPage()
+            ? const QRDisplayPage()
             : const Center(child: CircularProgressIndicator()),
         ],
       ),

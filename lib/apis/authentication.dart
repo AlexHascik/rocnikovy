@@ -1,5 +1,4 @@
 import 'package:flutter_rocnikovy/apis/api.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -29,7 +28,6 @@ class AuthAPI extends API{
     };
     final response = await sendRequest(validateHash, super.headers, body);
     if(receivedError(jsonDecode(response.body))){
-      handleError(response);
       return false;
     }
     var decodedResponse = jsonDecode(response.body);

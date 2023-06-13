@@ -4,15 +4,14 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class QRDisplayPage extends StatefulWidget {
-  
-
+  const QRDisplayPage({super.key});
   
   @override
-  _QRDisplayPageState createState() => _QRDisplayPageState();
+  QRDisplayPageState createState() => QRDisplayPageState();
 }
 
 
-class _QRDisplayPageState extends State<QRDisplayPage> {
+class QRDisplayPageState extends State<QRDisplayPage> {
 
   String _accessToken = '';
   int _institutionId = -1;
@@ -28,7 +27,9 @@ class _QRDisplayPageState extends State<QRDisplayPage> {
     setState(() {
       _institutionId = prefs.getInt('institutionId') ?? -1;
       _accessToken = prefs.getString('accessToken') ?? '';
-      qrData = jsonEncode({"accessToken": _accessToken, "institutionId": _institutionId});
+      final encodedAccessToken = base64Encode(utf8.encode(_accessToken));
+      final encodedInstitutionId = base64Encode(utf8.encode(_institutionId.toString()));
+      qrData = jsonEncode({"accessToken": encodedAccessToken, "institutionId": encodedInstitutionId});
     });
   }
 
@@ -46,7 +47,7 @@ class _QRDisplayPageState extends State<QRDisplayPage> {
                 version: QrVersions.auto,
                 size: 200.0,
               )
-            : CircularProgressIndicator(),
+            : const CircularProgressIndicator(),
       ),
     );
   }

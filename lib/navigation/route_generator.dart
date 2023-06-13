@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_rocnikovy/views/favorite_players_screen.dart';
 import 'package:flutter_rocnikovy/views/home_page.dart';
 import 'package:flutter_rocnikovy/views/login_page.dart';
 import 'package:flutter_rocnikovy/views/main_page.dart';
@@ -18,9 +19,13 @@ class RouteGenerator {
       case '/mainPage':
         return platformPageRoute(builder:(_) => const MainScreen());
       case '/homePage/users':
-        return platformPageRoute(builder:(_) =>  MyTeamPage(teamId: 2, scannedFlag: false,));  
+       
+        return platformPageRoute(builder:(_) =>  MyTeamPage(teamId: routeSettings.arguments as int, scannedFlag: false,));  
       case '/homePage/userDetails':
         return platformPageRoute(builder: (_) => UserDetailsPage(id: routeSettings.arguments as int));
+      case '/homePage/favoritePlayers':
+        return platformPageRoute(builder:(_) => const FavoritePlayersScreen());
+
     }
     return platformPageRoute(builder: (_) => const LoginPage());
   }

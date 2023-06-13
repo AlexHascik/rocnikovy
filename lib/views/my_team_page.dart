@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-
-import 'package:flutter/material.dart';
 import 'package:flutter_rocnikovy/apis/api.dart';
-import 'package:flutter_rocnikovy/data/institution.dart';
 import 'package:flutter_rocnikovy/data/institution_details.dart';
 import 'package:flutter_rocnikovy/data/user.dart';
-import 'package:flutter_rocnikovy/views/users_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MyTeamPage extends StatefulWidget{
@@ -13,8 +9,7 @@ class MyTeamPage extends StatefulWidget{
  final int teamId;
  final bool scannedFlag;
 
-  // Constructor
-  MyTeamPage({required this.teamId, required this.scannedFlag});
+  const MyTeamPage({super.key, required this.teamId, required this.scannedFlag});
 
   @override
   State<StatefulWidget> createState() => MyTeamPageState();
@@ -30,7 +25,7 @@ class MyTeamPageState extends State<MyTeamPage>{
   List<User> _allUsers = [];
   List<User> _foundUsers= [];
   bool scannedFlag = false;
-  API _api = API();
+  final API _api = API();
   
   @override
   void initState(){
@@ -62,7 +57,17 @@ class MyTeamPageState extends State<MyTeamPage>{
     });
   }
 
- Widget build(BuildContext context) {
+  void _updateUserList() async {
+  InstitutionDetails instDetails = await _api.getInstitutionDetails(teamId, );
+  List<User> users = instDetails.members!;
+  setState(() {
+    _allUsers = users;
+    _foundUsers = users;
+  });
+}
+
+ @override
+  Widget build(BuildContext context) {
   return Scaffold(
     appBar: AppBar(
       automaticallyImplyLeading: scannedFlag ? true : false,
@@ -100,6 +105,38 @@ class MyTeamPageState extends State<MyTeamPage>{
           height: 1.0,
           thickness: 1.0,
         ),
+         scannedFlag ? const Padding(padding: EdgeInsets.all(0),) : 
+         Padding(
+          padding: const EdgeInsets.only(bottom: 10, top: 10),
+          child: Card(  
+            child: ListTile( 
+              title: const Text("Zoznam obĺúbených hráčov"),
+              trailing: const Icon(Icons.navigate_next),
+              onTap: () async { 
+              SharedPreferences prefs = await SharedPreferences.getInstance();
+              List<String>? favorites = prefs.getStringList('favoritePlayerIds');
+              int size= 0;
+              if(favorites != null){
+                print('tu');
+                size = favorites.length;
+              }
+              print(size);
+               var result = await Navigator.of(context).pushNamed('/homePage/favoritePlayers');
+               favorites = prefs.getStringList('favoritePlayerIds');
+               int newSize = 0;
+               if(favorites != null){
+                newSize = favorites.length;
+               }
+                print(newSize);
+
+               if(result == 'update' && newSize < size){
+                  _updateUserList();
+               }
+                
+              }
+            ),
+          ), 
+        ),
         Padding(
         padding: const EdgeInsets.all(20),
         child: TextField(
@@ -125,7 +162,7 @@ class MyTeamPageState extends State<MyTeamPage>{
                    _allUsers = users;
                   _foundUsers = users;
                   }
-                  return buildUsers(_foundUsers);
+                  return UserList(users: _foundUsers);
                 } else{
                   return const Text('Žiadny hráči sa nenašli');
                 }
@@ -135,25 +172,96 @@ class MyTeamPageState extends State<MyTeamPage>{
     ),
   );
 }
-
- Widget buildUsers(List<User> users) => Scrollbar(
-                child: ListView.builder(
-                    itemCount: users.length,
-                    itemBuilder: (context, index) {
-                        final user = users[index];
-                        return Card(
-                            child: ListTile(
-                                title: Text("${user.firstName} ${user.lastName}"),
-                                subtitle: Text("${user.institutionName}"),
-                                trailing: const Icon(Icons.navigate_next),
-                                onTap: () {
-                                   Navigator.of(context).pushNamed('/homePage/userDetails', arguments: user.id!);
-                                },
-                            ),
-                        );
-                    },
-  ),
-            
-);
-
 }
+
+class UserList extends StatelessWidget {
+  final List<User> users;
+
+  const UserList({super.key, required this.users});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scrollbar(
+      child: ListView.builder(
+        itemCount: users.length,
+        itemBuilder: (context, index) {
+          final user = users[index];
+          return UserListItem(user: user);
+        },
+      ),
+    );
+  }
+}
+
+class UserListItem extends StatefulWidget {
+  final User user;
+
+  const UserListItem({super.key, required this.user});
+
+  @override
+  UserListItemState createState() => UserListItemState();
+}
+
+class UserListItemState extends State<UserListItem> {
+  bool starSelected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _getFavoriteState();
+  }
+
+  Future<void> _getFavoriteState() async {
+    final favoritePlayerIds = await _getFavoritePlayerIds();
+    setState(() {
+      starSelected = favoritePlayerIds.contains(widget.user.id.toString());
+    });
+  }
+
+  Future<List<String>> _getFavoritePlayerIds() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList('favoritePlayerIds') ?? [];
+  }
+
+  Future<void> _setFavoriteState(bool favorite) async {
+    final favoritePlayerIds = await _getFavoritePlayerIds();
+    final updatedFavoritePlayerIds = List<String>.from(favoritePlayerIds);
+
+    if (favorite) {
+      updatedFavoritePlayerIds.add(widget.user.id.toString());
+    } else {
+      updatedFavoritePlayerIds.remove(widget.user.id.toString());
+    }
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('favoritePlayerIds', updatedFavoritePlayerIds);
+
+    setState(() {
+      starSelected = favorite;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        title: Text("${widget.user.firstName} ${widget.user.lastName}"),
+        subtitle: Text("${widget.user.institutionName}"),
+        trailing: GestureDetector(
+          onTap: () {
+            _setFavoriteState(!starSelected);
+          },
+          child: Icon(
+            Icons.star,
+            color: starSelected ? Colors.yellow : null,
+          ),
+        ),
+        onTap: () {
+          Navigator.of(context).pushNamed('/homePage/userDetails', arguments: widget.user.id!);
+        },
+      ),
+    );
+  }
+}
+
+

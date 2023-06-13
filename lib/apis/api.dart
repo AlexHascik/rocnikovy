@@ -1,4 +1,3 @@
-import 'package:flutter_rocnikovy/data/institution.dart';
 import 'package:flutter_rocnikovy/data/institution_details.dart';
 import 'package:flutter_rocnikovy/data/user.dart';
 import 'package:http/http.dart' as http;
@@ -29,7 +28,6 @@ class API{
 
   Future<http.Response> sendRequest(String path, Map<String, String> header, Map<String, String> body) async{
     var response = await http.post(Uri.parse(path), headers: header, body: jsonEncode(body));
-    print(jsonDecode(response.body));
     return response;
   }
 
@@ -78,23 +76,34 @@ List<User> parseUsers(dynamic responseBody) {
         headers: <String, String>{
           'X-Registrations-AccessToken': prefs.getString('accessToken')!,
           'Content-Type': 'application/json'
-
           },
           body: jsonEncode(<String, int>{
-            
             "id": id
           }
     ));
       final body = json.decode(response.body);
       return UserDetails.fromJson(body['person']);
   }
+
+  Future<User> getUser(int id) async {
+    var prefs = await SharedPreferences.getInstance();
+    var response = await http.post(Uri.parse(personLookup),
+        headers: <String, String>{
+          'X-Registrations-AccessToken': prefs.getString('accessToken')!,
+          'Content-Type': 'application/json'
+
+          },
+          body: jsonEncode(<String, int>{
+            "id": id
+          }
+    ));
+      final body = json.decode(response.body);
+      return User.fromJson(body);
+  }
   bool receivedError(var response){   
     return response['errorCode'] != null;
   }
 
-  void handleError(var response){
-    print('Not sure yet');
-          
-  }
+ 
 
 }    

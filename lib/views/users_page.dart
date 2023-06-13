@@ -12,7 +12,7 @@ class UsersPage extends StatefulWidget{
 
 class UsersPageState extends State<UsersPage>{
 
-  API _api = API();
+  final API _api = API();
   List<User> _allUsers = [];
   List<User> _foundUsers= [];
   int _teamId = -1;
@@ -62,7 +62,7 @@ class UsersPageState extends State<UsersPage>{
           ),
            Expanded(
              child: FutureBuilder<dynamic>(
-              future: _api.getInstitutionDetails(_teamId),
+              future: _api.getInstitutionDetails(_teamId, ),
               builder:(context, snapshot){
                 if(snapshot.connectionState == ConnectionState.waiting){
                   return const Center(  

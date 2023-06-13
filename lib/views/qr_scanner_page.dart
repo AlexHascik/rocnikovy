@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rocnikovy/apis/api.dart';
+import 'package:flutter_rocnikovy/data/institution_details.dart';
 import 'package:flutter_rocnikovy/views/my_team_page.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'dart:convert';
@@ -9,13 +10,13 @@ import 'dart:convert';
 class QRScanPage extends StatefulWidget {
   final ValueNotifier<int> currentIndexNotifier;
 
-  QRScanPage({Key? key, required this.currentIndexNotifier}) : super(key: key);
+  const QRScanPage({Key? key, required this.currentIndexNotifier}) : super(key: key);
 
   @override
-  _QRScanPageState createState() => _QRScanPageState();
+  QRScanPageState createState() => QRScanPageState();
 }
 
-class _QRScanPageState extends State<QRScanPage> {
+class QRScanPageState extends State<QRScanPage> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   Barcode? result;
   QRViewController? controller;
@@ -36,11 +37,11 @@ class _QRScanPageState extends State<QRScanPage> {
     return ValueListenableBuilder<int>(
       valueListenable: widget.currentIndexNotifier,
       builder: (context, value, child) {
-        _isActiveTab = (value == 1); // QRScanPage is the active tab if value == 1
+        _isActiveTab = (value == 1); 
 
-        if (_isActiveTab) { // if QRScanPage is the active tab, resume the camera
+        if (_isActiveTab) {
           controller?.resumeCamera();
-        } else { // otherwise, pause the camera
+        } else {
           controller?.pauseCamera();
         }
 
@@ -66,15 +67,14 @@ class _QRScanPageState extends State<QRScanPage> {
   }
 
   void _onQRViewCreated(QRViewController controller) {
-    API _api = API();
     this.controller = controller;
-    if (_isActiveTab) { // if QRScanPage is the active tab, start scanning
+    if (_isActiveTab) {
       controller.resumeCamera();
-    } else { // otherwise, pause the camera
+    } else { 
       controller.pauseCamera();
     }
     controller.scannedDataStream.listen((scanData) async {
-      if (_isActiveTab) { // only process scan results if QRScanPage is the active tab
+      if (_isActiveTab) { 
         try {
           await _processScanData(scanData);
         } catch (e) {
@@ -110,19 +110,31 @@ class _QRScanPageState extends State<QRScanPage> {
 
 
   Future<void> _processScanData(Barcode scanData) async {
+    API api = API();
     Map<String, dynamic> data = jsonDecode(scanData.code!);
-    if (data.containsKey('accessToken') && data.containsKey('institutionId')) {
-      // pause the camera before navigating to the new page
-      controller!.pauseCamera();
+    if(!data.containsKey('accessToken') || !data.containsKey('institutionId')) return;
+    
+    controller!.pauseCamera();    
+    var institutionId = decodeBase64(data['institutionId']);
+    try{
+      int id = int.parse(institutionId);
+      InstitutionDetails details = await api.getInstitutionDetails(int.parse(decodeBase64(data['institutionId'])));
+    } catch(_){
+      controller!.resumeCamera();
+    }
 
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => MyTeamPage(teamId: data['institutionId'], scannedFlag: true,),
-        ),
-      ).then((_) => controller!.resumeCamera()
-      );
-    } 
+     Navigator.of(context).push(
+       MaterialPageRoute(
+         builder: (context) => MyTeamPage(teamId: int.parse(decodeBase64(data['institutionId'])), scannedFlag: true,),
+       ),
+     ).then((_) => controller!.resumeCamera()
+     );    
   }
+
+  String decodeBase64(String encodedString) {
+    final decodedBytes = base64Decode(encodedString);
+    return utf8.decode(decodedBytes);
+  } 
 
   @override
   void dispose() {
